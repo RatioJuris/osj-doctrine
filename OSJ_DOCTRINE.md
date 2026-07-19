@@ -1,7 +1,7 @@
 # THE OPEN SOURCE JOURNAL DOCTRINE
 
-**Published:** 19 July 2026
-**Promulgated by:** Ronav Isrgrajan Narayandas (also known as Ratio Juris)
+* **Published:** 19 July 2026
+* **Promulgated by:** Ronav Isrgrajan Narayandas (also known as Ratio Juris)
 
 ---
 
@@ -154,7 +154,7 @@ If any provision of The OSJ Rules or The OSJ License is found unenforceable, tec
 
 *End of The Open Source Journal Doctrine.*
 
-## Footnotes
+## Footnotes:
 
 1. <a id="fn1"></a>Commercial academic publishers have been reported to sustain profit margins of roughly 30-40 percent, and a review found that only around 28 percent of scholarly publications are currently open access, leaving most research behind a paywall. See: *Open access. Break the paywall. Reclaim knowledge now*, EduResearch Matters (2024), <https://blog.aare.edu.au/open-access-break-the-paywall-reclaim-knowledge-now/>; and *Open to the public: paywalls and the public rationale for open access medical research publishing*, Research Involvement and Engagement, Springer Nature (2020), <https://link.springer.com/article/10.1186/s40900-020-0182-y> <a class="back" href="#fnref1">↩ back to text</a>
 2. <a id="fn2"></a>Code-signing certificates needed for an operating system to treat independent software as trusted by default are commonly priced from roughly $250 to $400 or more per year, a cost unrelated to whether the underlying code is safe or well-written. See: SSL.com, *Which Code Signing Certificate do I Need? EV or OV?*, <https://www.ssl.com/faqs/which-code-signing-certificate-do-i-need-ev-ov/>; and Microsoft Learn, *Code signing options for Windows app developers*, <https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options> <a class="back" href="#fnref2">↩ back to text</a>
