@@ -1,5 +1,5 @@
 /* ============================================================
-   THE OSJ DOCTRINE — live markdown renderer + router
+   THE OSJ DOCTRINE - live markdown renderer + router
    Fetches markdown straight from the repo (OSJ_DOCTRINE.md,
    LICENSE.md, README.md) and renders it client-side. No build
    step: edit the .md, refresh the page, see the change.
@@ -69,7 +69,7 @@
     contentEl.querySelectorAll("a[href$='.md'], a[href*='.md#']").forEach((a) => {
       const href = a.getAttribute("href");
       const key = pathToDocKey(href);
-      if (!key) return; // unrecognized .md link — leave it as a normal link
+      if (!key) return; // unrecognized .md link - leave it as a normal link
       a.setAttribute("href", `#doc/${key}`);
       a.setAttribute("data-doc-link", key);
     });
@@ -138,7 +138,7 @@
   function renderError(message, { notFound = false } = {}) {
     contentEl.innerHTML = `
       <div class="state error">
-        <strong>${notFound ? "404 — Document not found." : "Something went wrong."}</strong><br>
+        <strong>${notFound ? "404 - Document not found." : "Something went wrong."}</strong><br>
         ${message}
         <div style="margin-top:1rem;">
           <a href="#doc/${DEFAULT_DOC}">← Back to the OSJ Doctrine</a>
@@ -153,16 +153,17 @@
     const doc = DOCS[docKey];
 
     if (!doc) {
-      // Unknown document key in the hash — treat as an in-app 404.
+      // Unknown document key in the hash - treat as an in-app 404.
       renderError(`There's no document registered for "<code>${docKey}</code>".`, { notFound: true });
       setActiveNav(null);
+      if (pageTitleEl) pageTitleEl.textContent = "404 - The Open Source Journal";
       return;
     }
 
     currentDoc = docKey;
     setActiveNav(docKey);
     if (rawLink) rawLink.setAttribute("href", doc.path);
-    if (pageTitleEl) pageTitleEl.textContent = `${doc.title} — The Open Source Journal`;
+    if (pageTitleEl) pageTitleEl.textContent = `${doc.title} - The Open Source Journal`;
 
     contentEl.innerHTML = `<div class="state">Loading ${doc.path}…</div>`;
     tocEl.innerHTML = '<li class="state">Loading…</li>';
@@ -189,7 +190,7 @@
       buildTOC();
       wireScrollSpy();
     } catch (err) {
-      renderError(`Could not load <code>${doc.path}</code> (${err.message}). If you're viewing this locally by double-clicking index.html, serve it over HTTP instead — browsers block fetch() on the file:// protocol.`);
+      renderError(`Could not load <code>${doc.path}</code> (${err.message}). If you're viewing this locally by double-clicking index.html, serve it over HTTP instead - browsers block fetch() on the file:// protocol.`);
       // eslint-disable-next-line no-console
       console.error("OSJ site render failed:", err);
     }
