@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The OSJ Doctrine — The Open Source Journal</title>
+  <title>The OSJ Doctrine - The Open Source Journal</title>
   <meta name="description" content="A statute-form doctrine arguing that academic publishing and software trust infrastructure share the same flaw: judging work by credentials and paid certificates instead of by proof-of-execution." />
 
   <link rel="icon" href="./favicon.ico" sizes="any" />
@@ -18,21 +18,54 @@
 </head>
 <body>
 
+  <noscript>
+    <div class="noscript-banner">
+      <strong>JavaScript is off in this browser.</strong>
+      This page renders the OSJ Doctrine live from its markdown source, which needs JavaScript to run.
+      You can still read everything directly:
+      <a href="./OSJ_DOCTRINE.md">OSJ_DOCTRINE.md</a>,
+      <a href="./LICENSE.md">LICENSE.md</a>,
+      <a href="./README.md">README.md</a>, or
+      <a href="./JJAJ.md">JJAJ.md</a>.
+    </div>
+  </noscript>
+
+  <!-- Sticky document navigation -->
+  <header class="topnav">
+    <a class="brand" href="#doc/doctrine" data-doc-link="doctrine">
+      <img src="./web/images/seal.png" alt="" width="28" height="28" />
+      <span>OSJ</span>
+    </a>
+
+    <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="doc-links">
+      <span class="sr-only">Toggle navigation</span>
+      <span class="bars" aria-hidden="true"></span>
+    </button>
+
+    <nav aria-label="Documents" id="doc-nav">
+      <ul id="doc-links">
+        <li><a href="#doc/doctrine" data-doc-link="doctrine">Doctrine</a></li>
+        <li><a href="#doc/license" data-doc-link="license">License</a></li>
+        <li><a href="#doc/readme" data-doc-link="readme">Readme</a></li>
+        <li><a href="#doc/jjaj" data-doc-link="jjaj">JJAJ</a></li>
+        <li><a id="raw-link" href="./OSJ_DOCTRINE.md" target="_blank" rel="noopener">View raw ↗</a></li>
+      </ul>
+    </nav>
+  </header>
+
   <header class="masthead">
     <img class="seal" src="./web/images/seal.png" alt="" width="108" height="108" />
     <p class="eyebrow">The Open Source Journal</p>
     <h1>The OSJ Doctrine</h1>
-    <p class="subtitle">A statute against gatekeeping — where proof-of-execution replaces credentials, paywalls, and paid certificates.</p>
+    <p class="subtitle">Doctrine, license, readme, and JJAJ - rendered live from source, not copy-pasted.</p>
     <p class="meta">
       <span>Author: Ratio Juris (Ronav Isrgrajan Narayandas)</span>
-      <a href="./LICENSE.md">OSJ License v1.0</a>
-      <a href="./OSJ_DOCTRINE.md">Raw .md</a>
     </p>
   </header>
 
   <div class="shell">
     <nav class="toc" aria-label="Table of contents">
-      <h2>Contents</h2>
+      <h2 id="toc-heading">Contents</h2>
       <ul id="toc-list">
         <li class="state">Loading…</li>
       </ul>
@@ -45,12 +78,13 @@
     </main>
   </div>
 
+  <button id="back-to-top" aria-label="Back to top" title="Back to top">↑</button>
+
   <footer class="site-footer">
-    <p>Rendered live from <code>OSJ_DOCTRINE.md</code> — nothing here is a static copy. Fork it, edit the source, refresh the page.</p>
+    <p>The Open Source Journal<span id="year"></span> Licensed under <a href="#doc/license" class="license-badge" title="The OSJ License" aria-label="The OSJ License">&#x24DE;&#x24E2;&#x24DB;</a>.</p>
   </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
   <script src="./web/js/app.js"></script>
 </body>
 </html>
-
