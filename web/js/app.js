@@ -1,16 +1,34 @@
 /* ============================================================
-   THE OSJ DOCTRINE — live markdown renderer
-   Fetches OSJ_DOCTRINE.md from the repo root and renders it
-   client-side. No build step, no server: what you edit in the
-   .md file is what appears on the page.
+   THE OSJ DOCTRINE — live markdown renderer + router
+   Fetches markdown straight from the repo (OSJ_DOCTRINE.md,
+   LICENSE.md, README.md) and renders it client-side. No build
+   step: edit the .md, refresh the page, see the change.
    ============================================================ */
 
 (function () {
   "use strict";
 
-  const SOURCE_PATH = "./OSJ_DOCTRINE.md";
-  const contentEl = document.getElementById("content");
-  const tocEl = document.getElementById("toc-list");
+  const DOCS = {
+    doctrine: { title: "The OSJ Doctrine", path: "./OSJ_DOCTRINE.md", label: "Doctrine" },
+    license:  { title: "The OSJ License",  path: "./LICENSE.md",       label: "License"  },
+    readme:   { title: "Readme",           path: "./README.md",        label: "Readme"   },
+    jjaj:     { title: "Doctrine of Judicial Justice and Absolute Justice", path: "./JJAJ.md", label: "JJAJ" },
+  };
+  const DEFAULT_DOC = "doctrine";
+
+  const contentEl   = document.getElementById("content");
+  const tocEl       = document.getElementById("toc-list");
+  const rawLink     = document.getElementById("raw-link");
+  const navToggle   = document.getElementById("nav-toggle");
+  const docNav      = document.getElementById("doc-nav");
+  const docLinks    = document.getElementById("doc-links");
+  const backToTop   = document.getElementById("back-to-top");
+  const yearEl      = document.getElementById("year");
+  const pageTitleEl = document.querySelector("title");
+
+  let currentDoc = DEFAULT_DOC;
+
+  // ---------- small utilities ----------
 
   function slugify(text) {
     return text
@@ -21,46 +39,53 @@
       .replace(/-+/g, "-");
   }
 
-  /**
-   * Pulls footnote definitions (e.g. "[^1]: some text") out of the
-   * raw markdown, and rewrites inline "[^1]" references into markdown
-   * links that resolve to real anchors once rendered.
-   */
-  function extractFootnotes(md) {
-    const defs = new Map();
-    const defPattern = /^\[\^([\w-]+)\]:\s*(.+)$/gm;
-
-    const withoutHeading = md.replace(/^#{1,6}\s+footnotes\s*$/gim, "");
-
-    const withoutDefs = withoutHeading.replace(defPattern, (match, id, text) => {
-      defs.set(id, text.trim());
-      return "";
+  function setActiveNav(docKey) {
+    document.querySelectorAll("[data-doc-link]").forEach((a) => {
+      const isActive = a.getAttribute("data-doc-link") === docKey;
+      a.classList.toggle("active", isActive);
+      if (isActive) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
     });
-
-    let order = [];
-    const withRefs = withoutDefs.replace(/\[\^([\w-]+)\]/g, (match, id) => {
-      if (!defs.has(id)) return match; // not a real footnote ref, leave as-is
-      if (!order.includes(id)) order.push(id);
-      const n = order.indexOf(id) + 1;
-      return `<sup id="fnref-${id}"><a class="fnref" href="#fn-${id}" aria-label="Footnote ${n}">[${n}]</a></sup>`;
-    });
-
-    return { body: withRefs, defs, order };
   }
 
-  function renderFootnotesHTML(defs, order) {
-    if (order.length === 0) return "";
-    const items = order
-      .map((id, i) => {
-        const n = i + 1;
-        const raw = defs.get(id) || "";
-        const text = raw.replace(/(^|[\s(])(https?:\/\/[^\s<>()]+)/g, "$1<$2>");
-        const parsed = window.marked.parseInline(text);
-        return `<li id="fn-${id}">${parsed} <a class="back" href="#fnref-${id}" aria-label="Back to reference ${n}">↩</a></li>`;
-      })
-      .join("\n");
-    return `<div class="footnotes"><h2>Footnotes</h2><ol>${items}</ol></div>`;
+  function closeMobileNav() {
+    docLinks.classList.remove("open");
+    docNav.classList.remove("open");
+    navToggle.setAttribute("aria-expanded", "false");
   }
+
+  // ---------- internal-link rewiring (so .md links render in-page) ----------
+
+  function pathToDocKey(href) {
+    const clean = href.replace(/^\.?\//, "").split(/[?#]/)[0].toUpperCase();
+    for (const [key, doc] of Object.entries(DOCS)) {
+      const docFile = doc.path.replace(/^\.?\//, "").toUpperCase();
+      if (clean === docFile) return key;
+    }
+    return null;
+  }
+
+  function rewireInternalLinks() {
+    contentEl.querySelectorAll("a[href$='.md'], a[href*='.md#']").forEach((a) => {
+      const href = a.getAttribute("href");
+      const key = pathToDocKey(href);
+      if (!key) return; // unrecognized .md link — leave it as a normal link
+      a.setAttribute("href", `#doc/${key}`);
+      a.setAttribute("data-doc-link", key);
+    });
+  }
+
+  function wrapTables() {
+    contentEl.querySelectorAll("table").forEach((table) => {
+      if (table.parentElement.classList.contains("table-scroll")) return;
+      const wrapper = document.createElement("div");
+      wrapper.className = "table-scroll";
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    });
+  }
+
+  // ---------- table of contents ----------
 
   function buildTOC() {
     const headings = contentEl.querySelectorAll("h2, h3");
@@ -74,7 +99,7 @@
       const li = document.createElement("li");
       const a = document.createElement("a");
       a.href = `#${h.id}`;
-      a.textContent = h.textContent.replace(/^\d+\s*[—-]\s*/, "").trim();
+      a.textContent = h.textContent.trim();
       if (h.tagName === "H3") a.classList.add("toc-h3");
       li.appendChild(a);
       frag.appendChild(li);
@@ -83,12 +108,15 @@
     tocEl.appendChild(frag);
   }
 
+  let scrollObserver = null;
+
   function wireScrollSpy() {
+    if (scrollObserver) scrollObserver.disconnect();
     const links = Array.from(tocEl.querySelectorAll("a"));
     if (links.length === 0) return;
     const map = new Map(links.map((a) => [a.getAttribute("href").slice(1), a]));
 
-    const observer = new IntersectionObserver(
+    scrollObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           const link = map.get(entry.target.id);
@@ -102,43 +130,123 @@
       { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
     );
 
-    contentEl.querySelectorAll("h2, h3").forEach((h) => observer.observe(h));
+    contentEl.querySelectorAll("h2, h3").forEach((h) => scrollObserver.observe(h));
   }
 
-  async function render() {
+  // ---------- error / 404 states ----------
+
+  function renderError(message, { notFound = false } = {}) {
+    contentEl.innerHTML = `
+      <div class="state error">
+        <strong>${notFound ? "404 — Document not found." : "Something went wrong."}</strong><br>
+        ${message}
+        <div style="margin-top:1rem;">
+          <a href="#doc/${DEFAULT_DOC}">← Back to the OSJ Doctrine</a>
+        </div>
+      </div>`;
+    tocEl.innerHTML = '<li><span style="opacity:.6">Nothing to show</span></li>';
+  }
+
+  // ---------- core render ----------
+
+  async function loadDoc(docKey) {
+    const doc = DOCS[docKey];
+
+    if (!doc) {
+      // Unknown document key in the hash — treat as an in-app 404.
+      renderError(`There's no document registered for "<code>${docKey}</code>".`, { notFound: true });
+      setActiveNav(null);
+      return;
+    }
+
+    currentDoc = docKey;
+    setActiveNav(docKey);
+    if (rawLink) rawLink.setAttribute("href", doc.path);
+    if (pageTitleEl) pageTitleEl.textContent = `${doc.title} — The Open Source Journal`;
+
+    contentEl.innerHTML = `<div class="state">Loading ${doc.path}…</div>`;
+    tocEl.innerHTML = '<li class="state">Loading…</li>';
+
     try {
-      const res = await fetch(SOURCE_PATH, { cache: "no-store" });
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const res = await fetch(doc.path, { cache: "no-store" });
+
+      if (res.status === 404) {
+        renderError(`<code>${doc.path}</code> could not be found on this server (HTTP 404).`, { notFound: true });
+        return;
+      }
+      if (!res.ok) {
+        throw new Error(`${res.status} ${res.statusText}`);
+      }
+
       const raw = await res.text();
 
-      const { body, defs, order } = extractFootnotes(raw);
-
       window.marked.setOptions({ gfm: true, breaks: false });
-      const html = window.marked.parse(body);
-      const footnotesHTML = renderFootnotesHTML(defs, order);
+      const html = window.marked.parse(raw);
 
-      contentEl.innerHTML = html + footnotesHTML;
+      contentEl.innerHTML = html;
+      rewireInternalLinks();
+      wrapTables();
       buildTOC();
       wireScrollSpy();
-
-      // honor a #hash present on page load, once content exists
-      if (location.hash) {
-        const target = document.querySelector(location.hash);
-        if (target) target.scrollIntoView({ block: "start" });
-      }
     } catch (err) {
-      contentEl.innerHTML = `
-        <div class="state error">
-          Could not load OSJ_DOCTRINE.md (${err.message}).<br>
-          If you're viewing this file locally, serve it over HTTP
-          rather than opening index.html directly — browsers block
-          fetch() on the file:// protocol.
-        </div>`;
+      renderError(`Could not load <code>${doc.path}</code> (${err.message}). If you're viewing this locally by double-clicking index.html, serve it over HTTP instead — browsers block fetch() on the file:// protocol.`);
       // eslint-disable-next-line no-console
-      console.error("OSJ Doctrine render failed:", err);
+      console.error("OSJ site render failed:", err);
     }
   }
 
-  document.addEventListener("DOMContentLoaded", render);
-})();
+  // ---------- routing ----------
 
+  function parseHash() {
+    // Recognized shapes: "#doc/<key>", "#doc/<key>#<anchor>" is not valid HTML hash
+    // syntax, so anchors within a doc are just "#<anchor>" once that doc is loaded.
+    const h = location.hash.replace(/^#/, "");
+    const match = h.match(/^doc\/([\w-]+)$/);
+    if (match) return { docKey: match[1], anchor: null };
+    if (h && DOCS[currentDoc]) return { docKey: currentDoc, anchor: h };
+    return { docKey: DEFAULT_DOC, anchor: null };
+  }
+
+  async function handleRoute() {
+    const { docKey, anchor } = parseHash();
+    if (docKey !== currentDoc || !contentEl.querySelector(":scope > *:not(.state)")) {
+      await loadDoc(docKey);
+    }
+    if (anchor) {
+      const target = document.getElementById(anchor);
+      if (target) target.scrollIntoView({ block: "start" });
+    }
+    closeMobileNav();
+  }
+
+  window.addEventListener("hashchange", handleRoute);
+
+  // ---------- mobile nav toggle ----------
+
+  navToggle.addEventListener("click", () => {
+    const open = docLinks.classList.toggle("open");
+    docNav.classList.toggle("open", open);
+    navToggle.setAttribute("aria-expanded", String(open));
+  });
+
+  // ---------- back-to-top ----------
+
+  function toggleBackToTop() {
+    backToTop.classList.toggle("visible", window.scrollY > 480);
+  }
+  window.addEventListener("scroll", toggleBackToTop, { passive: true });
+  backToTop.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  // ---------- footer year ----------
+
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  // ---------- boot ----------
+
+  document.addEventListener("DOMContentLoaded", () => {
+    toggleBackToTop();
+    handleRoute();
+  });
+})();
